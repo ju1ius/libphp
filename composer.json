@@ -1,0 +1,27 @@
+{
+    "name": "ju1ius/libphp",
+    "type": "library",
+    "description": "ju1ius's common php tools",
+    "keywords": [],
+    "homepage": "https://github.com/ju1ius/libphp",
+    "license": "LGPLv2",
+    "authors": [
+        {
+            "name": "ju1ius",
+            "homepage": "https://github.com/ju1ius"
+        }
+    ],
+    "require": {
+        "php": ">=5.3.2"
+    },
+    "autoload": {
+        "psr-0": { "ju1ius": "lib/" }
+    },
+    "target-dir": "ju1ius/libphp",
+    "extra": {
+        "branch-alias": {
+            "dev-master": "master"
+        }
+    }
+}
+
