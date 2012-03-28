@@ -1,0 +1,10 @@
+<phpunit colors="true" verbose="true">
+  <testsuites>
+    <testsuite name="ju1ius\Text\Source">
+      <file>Text/Source/StringTest.php</file>
+    </testsuite>
+    <testsuite name="Bugs">
+      <directory>bugs</directory>
+    </testsuite>
+  </testsuites>
+</phpunit>
