@@ -10,6 +10,7 @@ class Encoding
 {
   private static
     $DEFAULT_ENCODING,
+    $ENCODINGS_MAP,
     $ASCII_COMPATIBLE_ENCODINGS;
 
   /**
@@ -35,6 +36,42 @@ class Encoding
   public static function setDefault($charset)
   {
     self::$DEFAULT_ENCODING = $charset;
+  }
+
+  public static function isSupported($encoding)
+  {
+    return in_array(strtolower($encoding), self::getEncodingsMap());
+  }
+
+  public static function isSameEncoding($first, $second)
+  {
+    $first = strtolower($first);
+    $second = strtolower($second);
+    if($first === $second) return true;
+    $map = self::getEncodingsMap();
+    if(!isset($map[$first]) || !isset($map[$second])) return false;
+    $aliases = $map[$first];
+    return in_array($second, $aliases, true);
+  }
+
+  private static function getEncodingsMap()
+  {
+    if(null === self::$ENCODINGS_MAP) {
+      $map = array();
+      foreach(mb_list_encodings() as $encoding) {
+        $aliases = array_map('strtolower', mb_encoding_aliases($encoding));
+        $encoding = strtolower($encoding);
+        $map[$encoding] = $aliases;
+        foreach($aliases as $alias) {
+          if(!isset($map[$alias])) {
+            $map[$alias] = $aliases;
+            $map[$alias][] = $encoding;
+          }
+        }
+      }
+      self::$ENCODINGS_MAP = $map;
+    }
+    return self::$ENCODINGS_MAP;
   }
 
   public static function isAsciiCompatible($encoding)

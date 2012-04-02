@@ -21,4 +21,22 @@ class EncodingTest extends ju1ius_TestCase
       array('Shift-JS', false),
     );
   }
+
+  /**
+   * @dataProvider testIsSameEncodingProvider
+   **/
+  public function testIsSameEncoding($encoding_1, $encoding_2, $expected)
+  {
+    $this->assertEquals($expected, ju1ius\Text\Encoding::isSameEncoding($encoding_1, $encoding_2));
+  }
+  public function testIsSameEncodingProvider()
+  {
+    return array(
+      array('ascii', 'US-ASCII', true),
+      array('UTF8', 'utf-8', true),
+      array('UTF-16', 'big5', false),
+      array('Latin1', 'iso-8859-1', true),
+      array('Shift-JS', 'foobar', false),
+    );
+  }
 }
