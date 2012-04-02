@@ -40,7 +40,7 @@ class Encoding
   public static function isAsciiCompatible($encoding)
   {
     $compatible_encodings = self::getAsciiCompatibleEncodings();
-    return in_array($compatible_encodings, strtolower($encoding));
+    return in_array(strtolower($encoding), $compatible_encodings, true);
   }
 
   private static function getAsciiCompatibleEncodings()
