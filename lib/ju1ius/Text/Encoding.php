@@ -50,6 +50,7 @@ class Encoding
       foreach(range(0,127) as $ord) {
         $ascii_chars .= chr($ord);
       }
+      $compatible_encodings = array();
       foreach(mb_list_encodings() as $encoding) {
         $encoded = mb_convert_encoding($ascii_chars, $encoding);
         if($encoded === $ascii_chars) {
@@ -59,6 +60,7 @@ class Encoding
           }
         }
       }
+      self::$ASCII_COMPATIBLE_ENCODINGS = $compatible_encodings;
     }
     return self::$ASCII_COMPATIBLE_ENCODINGS;
   }
