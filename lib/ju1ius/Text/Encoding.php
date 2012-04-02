@@ -9,7 +9,8 @@ define('JU1IUS_HAS_ICONV',    extension_loaded('iconv'));
 class Encoding
 {
   private static
-    $DEFAULT_ENCODING;
+    $DEFAULT_ENCODING,
+    $ASCII_COMPATIBLE_ENCODINGS;
 
   /**
    * A global pointer to the default charset used for String manipulations.
@@ -34,6 +35,32 @@ class Encoding
   public static function setDefault($charset)
   {
     self::$DEFAULT_ENCODING = $charset;
+  }
+
+  public static function isAsciiCompatible($encoding)
+  {
+    $compatible_encodings = self::getAsciiCompatibleEncodings();
+    return in_array($compatible_encodings, strtolower($encoding));
+  }
+
+  private static function getAsciiCompatibleEncodings()
+  {
+    if(null === self::$ASCII_COMPATIBLE_ENCODINGS) {
+      $ascii_chars = '';
+      foreach(range(0,127) as $ord) {
+        $ascii_chars .= chr($ord);
+      }
+      foreach(mb_list_encodings() as $encoding) {
+        $encoded = mb_convert_encoding($ascii_chars, $encoding);
+        if($encoded === $ascii_chars) {
+          $compatible_encodings[] = strtolower($encoding);
+          foreach(mb_encoding_aliases($encoding) as $alias) {
+            $compatible_encodings[] = strtolower($alias);
+          }
+        }
+      }
+    }
+    return self::$ASCII_COMPATIBLE_ENCODINGS;
   }
 
   public static function detect($str)
