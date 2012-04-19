@@ -13,8 +13,7 @@ class String
     $contents,
     $encoding,
     $length,
-    $line_start_offsets,
-    $uid;
+    $line_start_offsets;
 
   /**
    * @param string $contents
@@ -25,8 +24,7 @@ class String
     $this->contents = $contents;
     $this->encoding = $encoding;
     $this->length = mb_strlen($contents, $encoding);
-    $this->line_start_offsets = self::computeLineStartOffsets($this);
-    $this->uid = spl_object_hash($this);
+    $this->line_start_offsets = $this->computeLineStartOffsets();
   }
 
   public function getContents()
@@ -45,10 +43,7 @@ class String
   {
     return $this->length;  
   }
-  public function getUid()
-  {
-    return $this->uid;  
-  }
+
 
   /**
    * @param int $offset
@@ -60,7 +55,6 @@ class String
     $line = $this->getLine($offset);
     $column = $this->getColumn($offset, $line); 
     return new Position(
-      $this, 
       $offset, $line,
       $column
     );
@@ -111,32 +105,22 @@ class String
     return $this->line_start_offsets[$line];
   }
 
-  static public function isLineTerminator($char)
-  {
-    if($char == "\n" || $char == "\r") return true;
-    return preg_match('/^[\x{2028}\x{2029}]$/uS', $char);
-  }
-
-  static protected function computeLineStartOffsets(String $source)
+  protected function computeLineStartOffsets()
   {
     $line_start_offsets = array(0);
-    $len = $source->getLength();
-    $chars = Utf8::str_split($source->getContents());
-
-    foreach ($chars as $pos => $char) {
-      if(self::isLineTerminator($char)) {
-        if($pos < $len && $char == "\r" && $chars[$pos+1] == "\n") {
-          continue;
-        }
-        $line_start_offsets[] = $pos + 1;
-      }
+    $offset = 0;
+    $encoding = $this->getEncoding();
+    mb_regex_encoding($encoding);
+    $lines = mb_split('\r\n|\n', $this->getContents());
+    foreach($lines as $line) {
+      $l = mb_strlen($line, $encoding);
+      $offset += $l + 1;
+      $line_start_offsets[] = $offset;
     }
-    //
-    $line_start_offsets[] = PHP_INT_MAX;
     return $line_start_offsets;
   }
 
-  static protected function binarySearch($arr, $target)
+  protected static function binarySearch($arr, $target)
   {
     $left = 0;
     $right = count($arr) - 1;

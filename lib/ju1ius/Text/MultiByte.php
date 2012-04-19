@@ -10,6 +10,15 @@ namespace ju1ius\Text;
  */
 class MultiByte
 { 
+  public static function str_split($str, $charset=null)
+  {
+    if($charset) {
+      mb_regex_encoding($charset);
+    }
+    // Split at all position not after the start (^) and not before the end ($)
+    return mb_split('(?<!^)(?!$)', $str); 
+  }
+
 	/**
 	 * Returns the length of the longest line in a string.
 	 *
@@ -17,9 +26,12 @@ class MultiByte
 	 * @param string $charset
 	 * @return int
 	 */
-	public static function text_width($str, $charset="utf-8")
+	public static function text_width($str, $charset=null)
   {
-    $lines = explode("\n", $str);
+    if($charset) {
+      mb_regex_encoding($charset);
+    }
+    $lines = mb_split('\r\n|[\n\r\v]', $str);
     $max_width = 0;
     foreach ($lines as $line) {
       $width = mb_strlen($line, $charset);
@@ -28,145 +40,112 @@ class MultiByte
     return $max_width;
 	}
 
-	/**
-   * Multibyte word wrap.
+  /**
+   * MultiByte safe version of internal wordwrap function
    *
-   * If your encoding is utf-8, uses ju1ius\Text\Utf8::wordwrap.
-   * It performs faster.
+   * @param string  $str        The input string
+   * @param int     $width      The maximum line length
+   * @param string  $break      The linebreak to use. Must be escaped with preg_quote if coming from external input.
    *
-   * This is an mbstring version of Zend\Text\MultiByte::wordWrap()
-	 *
-	 * @param  string  $string
-	 * @param  integer $width
-	 * @param  string  $break
-	 * @param  boolean $cut
-	 * @param  string  $charset
-	 * @return string
-	 */
-	public static function wordwrap($string, $width = 75, $break = "\n", $cut = false, $charset = 'UTF-8')
-	{
-    if(strtolower($charset) === 'utf-8') {
-      return Utf8::wordwrap($string, $width, $break, $cut);
+   * @return string
+   **/
+  public static function wordwrap($str, $width=75, $break="\n", $cut=false, $charset=null)
+  {
+    if($charset) {
+      mb_regex_encoding($charset);
     }
-		$result     = array();
-		$breakWidth = mb_strlen($break, $charset);
+    if($cut) {
+      // Match anything 1 to $width chars long followed by whitespace or EOS,
+      // otherwise match anything $width chars long
+      $search = '(.{1,'.($width-1).'})(?:\pZ|(\pM)|$)|(.{'.($width-1).'})';
+      $replace = '\1\2\3'.$break;
+    } else {
+      // Anchor the beginning of the pattern with a lookahead
+      // to avoid backtracking when words are longer than $width
+      $search = '(?=\s)(.{1,'.($width-1).'})(?:\s|$)';
+      $replace = '\1'.$break;
+    }
+    return mb_ereg_replace($search, $replace, $str);
+  }
 
-		while (($stringLength = mb_strlen($string, $charset)) > 0) {
-			$breakPos = mb_strpos($string, $break, 0, $charset);
+  /**
+   * Normalizes whitespace by reducing repeated whitespace characters
+   *
+   * If $preserve_linebreaks is false (default), every repeated whitespace character
+   * will be replaced by a single space (" ").
+   *
+   * If $preserve_linebreaks is true, it will try to preserve original linebreaks.
+   *
+   * @param string  $str
+   * @param bool    $preserve_linebreaks
+   * @return string
+   **/
+  public static function normalizeWhitespace($str, $preserve_linebreaks=false, $charset=null)
+  {
+    if($charset) {
+      mb_regex_encoding($charset);
+    }
+    if($preserve_linebreaks) {
+      $str = trim($str);
+      $str = mb_ereg_replace('(?:[ \t\p{Zs}])+', ' ', $str);
+      $str = mb_ereg_replace('(?:\r\n|[\f\r\n\p{Zl}\p{Zp}])+', "\n", $str);
+      $str = mb_ereg_replace('(?: ?\n ?)+', "\n", $str);
+      return $str;
+    }
+    return mb_ereg_replace('\s\s+', ' ', trim($str));
+  }
 
-			if ($breakPos !== false && $breakPos < $width) {
-				if ($breakPos === $stringLength - $breakWidth) {
-					$subString = $string;
-					$cutLength = null;
-				} else {
-					$subString = mb_substr($string, 0, $breakPos, $charset);
-					$cutLength = $breakPos + $breakWidth;
-				}
-			} else {
-				$subString = mb_substr($string, 0, $width, $charset);
+  /**
+   * Returns a string padded to a certain length with another string.
+   *
+   * This method behaves exactly like str_pad but is multibyte safe.
+   *
+   * @param string $input    The string to be padded.
+   * @param int $length      The length of the resulting string.
+   * @param string $pad      The string to pad the input string with. Must
+   *                         be in the same charset like the input string.
+   * @param const $type      The padding type. One of STR_PAD_LEFT,
+   *                         STR_PAD_RIGHT, or STR_PAD_BOTH.
+   * @param string $charset  The charset of the input and the padding
+   *                         strings.
+   *
+   * @return string  The padded string.
+   */
+  static public function str_pad($input, $length, $pad=' ', $type=STR_PAD_RIGHT, $charset='UTF-8')
+  {
+    $mb_length = mb_strlen($input, $charset);
+    $sb_length = strlen($input);
+    $pad_length = mb_strlen($pad, $charset);
 
-				if ($subString === $string) {
-					$cutLength = null;
-				} else {
-					$nextChar = mb_substr($string, $width, 1, $charset);
+    /* Return if we already have the length. */
+    if ($mb_length >= $length) {
+      return $input;
+    }
 
-					if ($breakWidth === 1) {
-						$nextBreak = $nextChar;
-					} else {
-						$nextBreak = mb_substr($string, $breakWidth, 1, $charset);
-					}
+    /* Shortcut for single byte strings. */
+    if ($mb_length == $sb_length && $pad_length == strlen($pad)) {
+      return str_pad($input, $length, $pad, $type);
+    }
 
-					if ($nextChar === ' ' || $nextBreak === $break) {
-						$afterNextChar = mb_substr($string, $width + 1, 1, $charset);
+    switch ($type) {
+      case STR_PAD_LEFT:
+        $left = $length - $mb_length;
+        $output = mb_substr(str_repeat($pad, ceil($left / $pad_length)), 0, $left, $charset) . $input;
+        break;
+      case STR_PAD_BOTH:
+        $left = floor(($length - $mb_length) / 2);
+        $right = ceil(($length - $mb_length) / 2);
+        $output = mb_substr(str_repeat($pad, ceil($left / $pad_length)), 0, $left, $charset) .
+          $input .
+          mb_substr(str_repeat($pad, ceil($right / $pad_length)), 0, $right, $charset);
+        break;
+      case STR_PAD_RIGHT:
+        $right = $length - $mb_length;
+        $output = $input . mb_substr(str_repeat($pad, ceil($right / $pad_length)), 0, $right, $charset);
+        break;
+    }
 
-						if ($afterNextChar === false) {
-							$subString .= $nextChar;
-						}
+    return $output;
+  }
 
-						$cutLength = mb_strlen($subString, $charset) + 1;
-					} else {
-						$spacePos = mb_strrpos($subString, ' ', $charset);
-
-						if ($spacePos !== false) {
-							$subString = mb_substr($subString, 0, $spacePos, $charset);
-							$cutLength = $spacePos + 1;
-						} else if ($cut === false) {
-							$spacePos = mb_strpos($string, ' ', 0, $charset);
-
-							if ($spacePos !== false) {
-								$subString = mb_substr($string, 0, $spacePos, $charset);
-								$cutLength = $spacePos + 1;
-							} else {
-								$subString = $string;
-								$cutLength = null;
-							}
-						} else {
-							$subString = mb_substr($subString, 0, $width, $charset);
-							$cutLength = $width;
-						}
-					}
-				}
-			}
-
-			$result[] = $subString;
-
-			if ($cutLength !== null) {
-				$string = mb_substr($string, $cutLength, ($stringLength - $cutLength), $charset);
-			} else {
-				break;
-			}
-		}
-
-		return implode($break, $result);
-	}
-
-	/**
-	 * String padding
-	 *
-	 * @param  string  $input
-	 * @param  integer $padLength
-	 * @param  string  $padString
-	 * @param  integer $padType
-	 * @param  string  $charset
-	 * @return string
-	 */
-	public static function str_pad($input, $padLength, $padString = ' ', $padType = STR_PAD_RIGHT, $charset = 'UTF-8')
-	{
-		$return          = '';
-		$lengthOfPadding = $padLength - mb_strlen($input, $charset);
-		$padStringLength = mb_strlen($padString, $charset);
-
-		if ($padStringLength === 0 || $lengthOfPadding === 0) {
-			$return = $input;
-		} else {
-			$repeatCount = floor($lengthOfPadding / $padStringLength);
-
-			if ($padType === STR_PAD_BOTH) {
-				$lastStringLeft  = '';
-				$lastStringRight = '';
-				$repeatCountLeft = $repeatCountRight = ($repeatCount - $repeatCount % 2) / 2;
-
-				$lastStringLength       = $lengthOfPadding - 2 * $repeatCountLeft * $padStringLength;
-				$lastStringLeftLength   = $lastStringRightLength = floor($lastStringLength / 2);
-				$lastStringRightLength += $lastStringLength % 2;
-
-				$lastStringLeft  = mb_substr($padString, 0, $lastStringLeftLength, $charset);
-				$lastStringRight = mb_substr($padString, 0, $lastStringRightLength, $charset);
-
-				$return = str_repeat($padString, $repeatCountLeft) . $lastStringLeft
-					. $input
-					. str_repeat($padString, $repeatCountRight) . $lastStringRight;
-			} else {
-				$lastString = mb_substr($padString, 0, $lengthOfPadding % $padStringLength, $charset);
-
-				if ($padType === STR_PAD_LEFT) {
-					$return = str_repeat($padString, $repeatCount) . $lastString . $input;
-				} else {
-					$return = $input . str_repeat($padString, $repeatCount) . $lastString;
-				}
-			}
-		}
-
-		return $return;
-	}
 }

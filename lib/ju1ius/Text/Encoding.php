@@ -11,7 +11,8 @@ class Encoding
   private static
     $DEFAULT_ENCODING,
     $ENCODINGS_MAP,
-    $ASCII_COMPATIBLE_ENCODINGS;
+    $ASCII_COMPATIBLE_ENCODINGS,
+    $IDENTITY_CACHE;
 
   /**
    * A global pointer to the default charset used for String manipulations.
@@ -54,7 +55,7 @@ class Encoding
     return in_array($second, $aliases, true);
   }
 
-  private static function getEncodingsMap()
+  public static function getEncodingsMap()
   {
     if(null === self::$ENCODINGS_MAP) {
       $map = array();
@@ -80,7 +81,7 @@ class Encoding
     return in_array(strtolower($encoding), $compatible_encodings, true);
   }
 
-  private static function getAsciiCompatibleEncodings()
+  public static function getAsciiCompatibleEncodings()
   {
     if(null === self::$ASCII_COMPATIBLE_ENCODINGS) {
       $ascii_chars = '';

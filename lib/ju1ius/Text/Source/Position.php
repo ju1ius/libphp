@@ -8,7 +8,6 @@ namespace ju1ius\Text\Source;
 class Position
 {
   protected
-    $source,
     $offset,
     $line,
     $column;
@@ -19,9 +18,8 @@ class Position
    * @param int  $line
    * @param int  $column
    **/
-  public function __construct(String $source, $offset, $line, $column)
+  public function __construct($offset, $line, $column)
   {
-    $this->source = $source;
     $this->offset = $offset;
     $this->line = $line;
     $this->column = $column;

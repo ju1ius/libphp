@@ -18,7 +18,7 @@ class EncodingTest extends ju1ius_TestCase
       array('UTF8', true),
       array('UTF-16', false),
       array('Latin1', true),
-      array('Shift-JS', false),
+      array('Shift-JIS', true),
     );
   }
 
