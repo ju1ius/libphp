@@ -4,10 +4,18 @@ namespace ju1ius\Text\Lexer;
 
 class Token
 {
-  private
-    $type,
-    $value,
-    $position;
+  /**
+   * @var integer The type of this token.
+   **/
+  public $type;
+  /**
+   * @var mixed The value of this token.
+   **/
+  public $value;
+  /**
+   * @var integer The position of this token in the source file.
+   **/
+  public $position;
 
   /**
    * Constructor.

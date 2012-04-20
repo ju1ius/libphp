@@ -16,6 +16,8 @@ abstract class LLk extends Text\Parser
    **/
   protected $lookaheads;
 
+  protected $current;
+
 
   public function __construct(Text\Lexer $lexer=null, $k=2)
   {
@@ -50,7 +52,7 @@ abstract class LLk extends Text\Parser
 
   protected function LA($offset=1)
   {
-    return $this->LT($offset)->getType();
+    return $this->LT($offset)->type;
   }
 
   protected function LT($offset=1)

@@ -10,6 +10,9 @@ namespace ju1ius\Text;
  */
 class MultiByte
 { 
+  /**
+   * FIXME: this doesn't work !!!
+   **/
   public static function str_split($str, $charset=null)
   {
     if($charset) {

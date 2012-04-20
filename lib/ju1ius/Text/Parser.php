@@ -7,9 +7,7 @@ use ju1ius\Text\Lexer\Token;
 use ju1ius\Text\Parser\Exception\ParseException;
 use ju1ius\Text\Parser\Exception\UnexpectedTokenException;
 
-/**
- * 
- */
+
 abstract class Parser
 {
   /**
@@ -27,18 +25,24 @@ abstract class Parser
    **/
   protected $position;
 
+
+  public function __construct(Text\Lexer $lexer=null)
+  {
+    if($lexer) $this->setLexer($lexer);
+  }
+
   public function setLexer(Text\Lexer $lexer)
   {
     $this->lexer = $lexer;
   }
 
   abstract protected function consume();
-  abstract protected function current();
   abstract protected function LA($offset=1);
   abstract protected function LT($offset=1);
 
   protected function reset()
   {
+    $this->lexer->reset();
     $this->position = 0;
   }
 
@@ -51,12 +55,12 @@ abstract class Parser
   protected function ensure($type)
   {
     $token = $this->LT();
-
     $match = false;
+
     if(is_array($type)) {
-      $match = $token->isOneOfTypes($type);
+      $match = in_array($token->type, $type, true);
     } else {
-      $match = $token->isOfType($type);
+      $match = $token->type === $type;
     }
 
     if (!$match) {
