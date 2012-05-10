@@ -12,10 +12,16 @@ class Token
    * @var mixed The value of this token.
    **/
   public $value;
+
   /**
-   * @var integer The position of this token in the source file.
+   * @var integer The column of this token in the source file.
    **/
-  public $position;
+  public $column;
+
+  /**
+   * @var integer The line no of this token in the source file.
+   **/
+  public $line;
 
   /**
    * Constructor.
@@ -24,11 +30,12 @@ class Token
    * @param mixed $value The value of this token.
    * @param integer $position The order of this token.
    */
-  public function __construct($type, $value, $position)
+  public function __construct($type, $value, $line, $column)
   {
     $this->type = $type;
     $this->value = $value;
-    $this->position = $position;
+    $this->line = $line;
+    $this->column = $column;
   }
 
   /**
@@ -44,48 +51,4 @@ class Token
     return (string) $this->value;
   }
 
-  /**
-   * Answers whether this token's type equals to $type.
-   *
-   * @param string|int $types The type to test against this token.
-   *
-   * @return Boolean
-   */
-  public function isOfType($type)
-  {
-    return $this->type === $type;
-  }
-
-
-  /**
-   * Checks whether this token's type is one of given types.
-   *
-   * @param array $types The types to test against this token.
-   *
-   * @return Boolean
-   */
-  public function isOneOfTypes(array $types)
-  {
-    return in_array($this->type, $types);
-  }
-
-  /**
-   * Gets the position of this token.
-   *
-   * @return integer
-   */
-  public function getPosition()
-  {
-    return $this->position;
-  }
-
-  public function getType()
-  {
-    return $this->type;
-  }
-
-  public function getValue()
-  {
-    return $this->value;
-  }
 }

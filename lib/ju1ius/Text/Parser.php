@@ -73,23 +73,24 @@ abstract class Parser
   {
     $source = $this->lexer->getSource();
     $file = $source instanceof Source\File ? $source->getUrl() : 'internal_string';
-    $position = $token->getPosition();
-    $line = $source->getLine($position);
-    $column = $source->getColumn($position, $line);
+    //$position = $token->getPosition();
+    //$line = $source->getLine($position);
+    //$column = $source->getColumn($position, $line);
 
-    throw new ParseException($msg, $file, $line, $column);
+    throw new ParseException($msg, $file, $token->line, $token->column);
   }
 
   protected function _unexpectedToken(Token $actual, $expected)
   {
     $source = $this->lexer->getSource();
     $file = $source instanceof Source\File ? $source->getUrl() : 'internal_string';
-    $position = $actual->getPosition();
-    $line = $source->getLine($position);
-    $column = $source->getColumn($position, $line);
-    
-    $name = $this->lexer->getTokenName($actual->getType());
-    $name .= ' ('.print_r($actual->getValue(), true).')';
+    //$position = $actual->getPosition();
+    //$line = $source->getLine($position);
+    //$column = $source->getColumn($position, $line);
+   
+    $name = $this->lexer->getTokenName($actual->type);
+    $name .= ' ('.print_r($actual->value, true).')';
+
     if (is_array($expected)) {
       $types = array();
       foreach ($expected as $type) {
@@ -99,7 +100,7 @@ abstract class Parser
     } else {
       $expected = $this->lexer->getTokenName($expected);
     }
-    throw new UnexpectedTokenException($name, $expected, $file, $line, $column);
+    throw new UnexpectedTokenException($name, $expected, $file, $actual->line, $actual->column);
   }
 
 }

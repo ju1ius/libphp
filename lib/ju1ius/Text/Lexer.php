@@ -7,35 +7,56 @@ use ju1ius\Text\Lexer\Token;
 
 abstract class Lexer
 {
+  const T_EOL = -2;
   const T_EOF = -1;
   const T_INVALID = 0;
 
   protected static $TOKEN_NAMES;
 
   /**
-   * @var integer Current lexer position in input string
-   */
-  protected $position = 0;
-
-  /**
-   * @var array The next token in the input.
-   */
-  protected $lookahead;
-
-  /**
-   * @var Source\String the source string
+   * @var Source\String the source object
    **/
   protected $source;
 
   /**
-   * @var string the source text
+   * @var \SplFixedArray The lines of the source object
+   **/
+  protected $lines;
+
+  /**
+   * @var integer The number of lines in the source
+   **/
+  protected $numlines;
+
+  /**
+   * @var integer The current source line
+   **/
+  protected $lineno;
+
+  /**
+   * @var string the current source line's text
    **/
   protected $text;
 
   /**
-   * @var integer the source length
+   * @var integer the current source line's length
    **/
   protected $length;
+
+  /**
+   * @var integer Current lexer position in input string (in number of characters)
+   */
+  protected $position = 0;
+
+  /**
+   * @var integer Current lexer position in input string (in number of bytes)
+   */
+  protected $bytepos = 0;
+
+  /**
+   * @var array The next character in the input.
+   */
+  protected $lookahead;
 
   /**
    * @var string the source encoding
@@ -63,10 +84,12 @@ abstract class Lexer
    */
   public function setSource(Source\String $source)
   {/*{{{*/
-    $this->length = $source->getLength();
-    $this->text = $source->getContents();
-    $this->encoding = $source->getEncoding();
     $this->source = $source;
+    $this->encoding = $source->getEncoding();
+    $this->is_ascii = Encoding::isSameEncoding($this->encoding, 'ascii');
+    mb_regex_encoding($this->encoding);
+    $this->lines = $source->getLines();
+    $this->numlines = $source->getNumLines();
     $this->reset();
   }/*}}}*/
 
@@ -85,9 +108,24 @@ abstract class Lexer
    */
   public function reset()
   {/*{{{*/
-    $this->lookahead = null;
-    $this->position = -1;
+    $this->setLine(0);
     $this->state->reset();
+  }/*}}}*/
+
+  public function setLine($num)
+  {/*{{{*/
+    if ($num > $this->numlines-1) return;
+    $this->lineno = $num;
+    $this->text = $this->lines[$num];
+    $this->length = $this->is_ascii ? strlen($this->text) : mb_strlen($this->text, $this->encoding);
+    $this->position = -1;
+    $this->bytepos = -1;
+    $this->lookahead = null;
+  }/*}}}*/
+
+  public function nextLine()
+  {/*{{{*/
+    $this->setLine($this->lineno + 1);
   }/*}}}*/
 
   public function getTokenName($type)
@@ -97,8 +135,11 @@ abstract class Lexer
 
   public function getLiteral(Token $token)
   {/*{{{*/
-    $name = static::$TOKEN_NAMES[$token->getType()];
-    return $name . ' at position ' . $token->getPosition() . ": " . $token;
+    $name = static::$TOKEN_NAMES[$token->type];
+    return sprintf(
+      "%s (%s) on line %s, column %s.",
+      $name, $token, $token->line, $token->column
+    );
   }/*}}}*/
 
   public function getTokenNames()
@@ -112,6 +153,19 @@ abstract class Lexer
     return static::$TOKEN_NAMES;
   }/*}}}*/
 
+  protected function consumeCharacters($length=1)
+  {/*{{{*/
+    $this->position += $length;
+    $this->bytepos += $length;
+    if($this->position > $this->length) {
+      $this->lookahead = null;
+    } else {
+      $this->lookahead = $this->is_ascii
+        ? substr($this->text, $this->position, 1)
+        : mb_substr($this->text, $this->position, 1, $this->encoding);
+    }
+  }/*}}}*/
+
   protected function consume($length=1)
   {/*{{{*/
     $this->position += $length;
@@ -122,32 +176,61 @@ abstract class Lexer
     }
   }/*}}}*/
 
-  public function consumeString($str)
+  protected function consumeString($str)
   {/*{{{*/
-    $this->position += strlen($str);
+    if($this->is_ascii) {
+      $len = strlen($str);
+      $this->position += $len;
+      $this->bytepos += $len;
+    } else {
+      $this->position += mb_strlen($str, $this->encoding);
+      $this->bytepos += strlen($str);
+    }
+
     if($this->position > $this->length) {
       $this->lookahead = null;
     } else {
-      $this->lookahead = substr($this->text, $this->position, 1);
+      $this->lookahead = $this->is_ascii
+        ? substr($this->text, $this->position, 1)
+        : mb_substr($this->text, $this->position, 1, $this->encoding);
     }
   }/*}}}*/
 
-  public function comes($str)
+  protected function comes($str)
   {/*{{{*/
     if($this->position > $this->length) return false;
-    $length = strlen($str);
-    return substr($this->text, $this->position, $length) === $str;
+    if($this->is_ascii) {
+      $length = strlen($str);
+      return substr($this->text, $this->position, $length) === $str;
+    } else {
+      $length = mb_strlen($str, $this->encoding);
+      return mb_substr($this->text, $this->position, $length, $this->encoding) === $str;
+    }
   }/*}}}*/
 
-  public function peek($length=1, $offset=0)
+  protected function peek($length=1, $offset=0)
   {/*{{{*/
-    return substr($this->text, $this->position + $offset + 1, $length);
+    return $this->is_ascii
+      ? substr($this->text, $this->position + $offset + 1, $length)
+      : mb_substr($this->text, $this->position + $offset + 1, $length, $this->encoding);
   }/*}}}*/
 
-  public function comesExpression($pattern)
+  protected function comesExpression($pattern, $options = 'msi')
   {/*{{{*/
     if($this->position > $this->length) return false;
-    return preg_match('/\G'.$pattern.'/i', $this->text, $matches, 0, $this->position);
+    //return preg_match('/\G'.$pattern.'/iu', $this->text, $matches, 0, $this->bytepos);
+    mb_ereg_search_init($this->text, '\G'.$pattern, $options);
+    mb_ereg_search_setpos($this->bytepos);
+    return mb_ereg_search();
+  }/*}}}*/
+
+  protected function match($pattern, $position=null, $options='msi')
+  {/*{{{*/
+    if(null === $position) $position = $this->bytepos;
+    if($this->position >= $this->length) return false;
+    mb_ereg_search_init($this->text, '\G'.$pattern, $options);
+    mb_ereg_search_setpos($position);
+    return mb_ereg_search_regs();
   }/*}}}*/
 
 }

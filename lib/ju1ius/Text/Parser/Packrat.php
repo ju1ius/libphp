@@ -146,12 +146,13 @@ abstract class Packrat extends LLk
     }
   }
 
-  /** Have we parsed a particular rule before at this input position?
-   *  If no memoization value, we've never parsed here before.
-   *  If memoization value is FAILED, we parsed and failed before.
-   *  If value >= 0, it is an index into the token buffer.  It indicates
-   *  a previous successful parse.  This method has a side effect:
-   *  it seeks ahead in the token buffer to avoid reparsing.
+  /** 
+   * Have we parsed a particular rule before at this input position?
+   * If no memoization value, we've never parsed here before.
+   * If memoization value is FAILED, we parsed and failed before.
+   * If value >= 0, it is an index into the token buffer.  It indicates
+   * a previous successful parse.  This method has a side effect:
+   * it seeks ahead in the token buffer to avoid reparsing.
    */
   protected function hasAlreadyParsedRule($rule_name)
   {

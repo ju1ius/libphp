@@ -21,6 +21,11 @@ class File extends String
     parent::__construct($contents, $encoding);
   }
 
+  /**
+   * Returns the url of the source file
+   *
+   * @return string
+   **/
   public function getUrl()
   {
     return $this->url; 

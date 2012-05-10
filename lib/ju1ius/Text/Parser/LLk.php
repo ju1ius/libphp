@@ -9,7 +9,7 @@ abstract class LLk extends Text\Parser
   /**
    * @var integer size of the lookahead buffer
    **/
-  protected $K;
+  protected $_K;
 
   /**
    * @var array lookahead buffer 
@@ -22,7 +22,7 @@ abstract class LLk extends Text\Parser
   public function __construct(Text\Lexer $lexer=null, $k=2)
   {
     $this->setLexer($lexer);
-    $this->K = $k;
+    $this->_K = $k;
   }
 
   public function setLexer(Text\Lexer $lexer)
@@ -33,8 +33,8 @@ abstract class LLk extends Text\Parser
   protected function reset()
   {
     parent::reset();
-    $this->lookaheads = new \SplFixedArray($this->K);
-    for ($i = 1; $i <= $this->K; $i++) $this->consume();
+    $this->lookaheads = new \SplFixedArray($this->_K);
+    for ($i = 1; $i <= $this->_K; $i++) $this->consume();
   }
 
   protected function consume()
@@ -42,7 +42,20 @@ abstract class LLk extends Text\Parser
     // fill next position with token
     $this->lookaheads[$this->position] = $this->lexer->nextToken();
     // increment circular index
-    $this->position = ($this->position + 1) % $this->K;
+    $this->position = ($this->position + 1) % $this->_K;
+  }
+
+  protected function consumeUntil($type)
+  {
+    if (is_array($type)) {
+      while (!in_array($this->LT()->type, $type)) {
+        $this->consume();
+      }
+    } else {
+      while($this->LT()->type !== $type) {
+        $this->consume();
+      }
+    }
   }
 
   protected function current()
@@ -58,6 +71,6 @@ abstract class LLk extends Text\Parser
   protected function LT($offset=1)
   {
     // circular fetch
-    return $this->lookaheads[($this->position + $offset - 1) % $this->K];
+    return $this->lookaheads[($this->position + $offset - 1) % $this->_K];
   }
 }
