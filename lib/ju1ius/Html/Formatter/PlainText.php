@@ -30,15 +30,15 @@ class PlainText implements FormatterInterface
    * @param string       $charset="utf-8"
    **/
   public function __construct($width=75, $charset='utf-8')
-  {
+  {/*{{{*/
     $this->wordwrap = $width;
     $this->charset = $charset;
 		$this->original_dom = new \DOMDocument();
 		$this->original_dom->preserveWhiteSpace = false;
-  }
+  }/*}}}*/
 
   public function format()
-  {
+  {/*{{{*/
     $this->dom = $this->xslt->transformToDoc($this->original_dom);
 		$this->dom->normalize();
 		$this->dom->formatOutput = true;
@@ -49,38 +49,38 @@ class PlainText implements FormatterInterface
     );
     $text = $this->parseDocument();
 		return $text;
-  }
+  }/*}}}*/
 
   public function loadHtml($html)
-  {
+  {/*{{{*/
 		$this->original_dom->loadHTML($html);
 		$this->original_dom->normalize();
     $this->loadStyleSheets();
-  }
+  }/*}}}*/
 
   public function loadHtmlFile($file)
-  {
+  {/*{{{*/
     $this->original_dom->loadHTMLFile($file);
 		$this->original_dom->normalize();
     $this->loadStyleSheets();
-  }
+  }/*}}}*/
 
   public function setDom(\DOMDocument $dom)
-  {
+  {/*{{{*/
     $this->original_dom = $dom;
 		$this->original_dom->normalize();
     $this->loadStyleSheets();
-  }
+  }/*}}}*/
 
   private function loadStyleSheets()
-  {
+  {/*{{{*/
     $this->xslt = new \XSLTProcessor();
     $stylesheet = \DOMDocument::load(__DIR__.'/stylesheets/plaintext.xsl');
     $this->xslt->importStylesheet($stylesheet);
-  }
+  }/*}}}*/
 
   private function parseDocument()
-  {
+  {/*{{{*/
     $context = array(
       'depth'       => 0,
       'indent'      => "",
@@ -95,10 +95,10 @@ class PlainText implements FormatterInterface
       $output .= $this->parseNode($child, $context);
     }
     return $output;
-  }
+  }/*}}}*/
 
   private function parseNode(\DOMNode $node, $context)
-  {
+  {/*{{{*/
     $type = $node->nodeType;
     if($type == XML_ELEMENT_NODE) {
       if ($node->tagName == 'txt:block') {
@@ -111,18 +111,18 @@ class PlainText implements FormatterInterface
     } else if ($type == XML_TEXT_NODE) {
       return $this->parseTextNode($node, $context);
     }
-  }
+  }/*}}}*/
 
 	private function parseSeparator(\DOMElement $node, $context)
-	{
+	{/*{{{*/
 		$char = $node->getAttribute('char');
 		$width = $this->wordwrap - mb_strlen($context['indent'], $this->charset);
 		$text = $context['indent'] . str_repeat($char, $width);
 		return "\n\n" . $text . "\n\n";
-	}
+	}/*}}}*/
 
   private function parseBlock(\DOMElement $node, $context)
-	{
+	{/*{{{*/
 		// ---------- Set up the context to pass to children
     $text = "";
     $context['line_prefix'] = '';
@@ -203,10 +203,10 @@ class PlainText implements FormatterInterface
 		$text = $this->applyLineBreaks($node, $text);
 
     return $text;
-  }
+  }/*}}}*/
 
   private function parseTable(\DOMElement $node, $context)
-  {
+  {/*{{{*/
     $trs = $this->xpath->query('txt:tr', $node);
     $num_cols = 0;
     $rows = array();
@@ -245,10 +245,10 @@ class PlainText implements FormatterInterface
       }
       return $table->render();
     }
-  }
+  }/*}}}*/
 
   private function parseTextNode(\DOMText $node, $context)
-  {
+  {/*{{{*/
     $text = "";
     $raw = $context['raw'];
     $indent = $context['indent'];
@@ -307,10 +307,10 @@ class PlainText implements FormatterInterface
       }
     }
     return $text;
-  }
+  }/*}}}*/
 
   private function boxify($text, $chars)
-  {
+  {/*{{{*/
     $chars = explode(",", $chars);
     $num_chars = count($chars);
     if($num_chars == 2) {
@@ -330,10 +330,10 @@ class PlainText implements FormatterInterface
     }
     $output .= $sw . str_repeat($s, $width + 2) . $se . "\n";
     return $output;
-	}
+	}/*}}}*/
 
 	private function applyBorders(\DOMElement $node, $text, $context)
-	{
+	{/*{{{*/
 		$has_border_top = $node->hasAttribute('border-top');
 		$has_border_bottom = $node->hasAttribute('border-bottom');
 
@@ -356,7 +356,7 @@ class PlainText implements FormatterInterface
 
 		}
 		return $text;
-	}
+	}/*}}}*/
 
 	/**
 	 * Computes margins to text blocks.
@@ -369,7 +369,7 @@ class PlainText implements FormatterInterface
 	 * @return string
 	 **/
 	private function applyLineBreaks(\DOMElement $node, $text)
-	{
+	{/*{{{*/
 		if($node->hasAttribute('lines-before')) {
 
 			$lines_before = (int) $node->getAttribute('lines-before');
@@ -399,7 +399,7 @@ class PlainText implements FormatterInterface
 
 		}
 		return $text;
-	}
+	}/*}}}*/
 
 	/**
 	 * At this point lines-before/after have already been added by the children,
@@ -409,7 +409,7 @@ class PlainText implements FormatterInterface
 	 *
 	 **/
 	private function getNumLinesAppliedByChildren($where, $node)
-	{
+	{/*{{{*/
 		$child = ($where == 'before') ? 'firstChild' : 'lastChild';
 		$max_lines = 0;
 		$it = $node;
@@ -426,6 +426,6 @@ class PlainText implements FormatterInterface
 			}
 		}
 		return $max_lines;
-	}
+	}/*}}}*/
 
 }
